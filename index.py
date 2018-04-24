@@ -28,7 +28,7 @@ def ID_get(file):
 def main():
     """Perform main function."""
     if len(sys.argv) != 3:
-        print("Format: python index.py [file with ID input] [csv output]")
+        print("Usage: python index.py [file with ID input] [csv output]")
         return
 
     file_source = sys.argv[1]
@@ -39,18 +39,23 @@ def main():
 
     for id in id_arr:
         title, chardata = API_call(id)
+        print("Getting char info from {}".format(title))
         if title and chardata:
             for char in chardata:
-                name = unescape(char['name'])
+                # TODO: More efficient way instead of double unescapes
                 role = char['role']
+                name = unescape(unescape(char['name']))
                 if(char['voice_actor']):
-                    seiyuu = unescape(char['voice_actor'][0]['name'])
+                    seiyuu = unescape(unescape(char['voice_actor'][0]['name']))
                 else:
                     seiyuu = "N/A"
 
                 row_array = "{},{},{},{}\n".format(title, name, role, seiyuu)
                 target.write(row_array)
+        print("Character data from {} complete.".format(title))
 
+    print("Script complete.")
+    return
 
 if __name__ == "__main__":
     main()
