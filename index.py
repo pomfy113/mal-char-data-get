@@ -13,10 +13,10 @@ def API_call(MAL_id):
     try:
         data = urllib.request.urlopen(API_url)
     except urllib.error.URLError as e:
-        return None
+        return None, None
 
     result = json.loads(data.read())
-    return result['character']
+    return result['title_english'], result['character']
 
 
 def ID_get(file):
@@ -31,14 +31,26 @@ def main():
         print("Format: python index.py [file with ID input] [csv output]")
         return
 
-    source_id = sys.argv[1]
-    id_arr = ID_get(source_id)
+    file_source = sys.argv[1]
+    file_target = sys.argv[2]
+    id_arr = ID_get(file_source)
+
+    target = open(file_target, 'w')
 
     for id in id_arr:
-        chardata = API_call(id)
-        if chardata:
-            for character in chardata:
-                print(unescape(character['name']), character['role'])
+        title, chardata = API_call(id)
+        if title and chardata:
+            for char in chardata:
+                name = unescape(char['name'])
+                role = char['role']
+                if(char['voice_actor']):
+                    seiyuu = unescape(char['voice_actor'][0]['name'])
+                else:
+                    seiyuu = "N/A"
 
-if __name__== "__main__":
+                row_array = "{},{},{},{}\n".format(title, name, role, seiyuu)
+                target.write(row_array)
+
+
+if __name__ == "__main__":
     main()
