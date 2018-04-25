@@ -1,3 +1,5 @@
+"""Main function."""
+
 import urllib.request
 import json
 import sys
@@ -23,6 +25,7 @@ def API_call(MAL_id):
 
     result = json.loads(data.read())
 
+    # Check titles; defaulting to normal title for now
     if result['title_english']:
         return unescape(result['title_english']), result['character']
     elif result['title']:
@@ -47,6 +50,8 @@ def write_to_csv(id_arr, target):
         title, chardata = API_call(id)
         # Status check
         print("Getting info from {}, id: {}".format(title, id))
+
+        # In case of issues involving timing, retry with a delay
         if title is None:
             print("Error - did not get id: {}. Retrying;".format(id))
             time.sleep(1)
@@ -65,7 +70,7 @@ def write_to_csv(id_arr, target):
                 # Cleaned up array for writing into csv
                 row_array = "{},{},{},{}\n".format(title, name, role, seiyuu)
 
-                # Proper CSV
+                # Insert line into csv
                 target.write(row_array)
         else:
             print("Could not get data.")
@@ -85,15 +90,17 @@ def main():
         return None
 
     print("Script beginning - pulling IDs")
+
     file_source = sys.argv[1]           # Source of IDs
     file_target = sys.argv[2]           # Target of data we want
 
-    id_arr = ID_get('./input/{}'.format(file_source))        # ID Read target
+    id_arr = ID_get('./input/{}'.format(file_source))       # ID Read target
     target = open('./output/{}'.format(file_target), 'w')   # Data Write target
 
     write_to_csv(id_arr, target)        # Loop function for writing
 
     print("Script complete. See '{}' for results".format(file_target))
+
     return
 
 

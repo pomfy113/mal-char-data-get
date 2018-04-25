@@ -2,10 +2,8 @@ import urllib.request
 import sys
 import json
 
-
 def main():
     """Grab list of IDs using unoffocial MAL API (Jikan)."""
-
     if len(sys.argv) != 3:
         print("Usage: python season-get [year] [season, lowercase]")
         return None
