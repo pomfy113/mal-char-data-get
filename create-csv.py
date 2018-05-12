@@ -24,29 +24,24 @@ def API_call(MAL_id):
     try:
         data = urllib.request.urlopen(API_url)
     except urllib.error.URLError as e:
+        print(e)
         return None
 
     result = json.loads(data.read())
 
     return result
 
-def get_themes(title, data, target, write=False):
+def get_themes(title, data):
     themes = []
     for op in data['opening_theme']:
         opening = "{},opening,{}\n".format(title, op)
-        if write is True:
-            target.write(opening)
-        else:
-            themes.append(opening)
+        themes.append(opening)
     for ed in data['ending_theme']:
         ending = "{},ending,{}\n".format(title, ed)
-        if write is True:
-            target.write(ending)
-        else:
-            themes.append(ending)
+        themes.append(ending)
     return themes
 
-def get_cast(title, data, target, write=False):
+def get_cast(title, data):
     cast = []
     for char in data['character']:
         role = char['role']
@@ -58,10 +53,7 @@ def get_cast(title, data, target, write=False):
 
         # Cleaned up array for writing into csv
         row = "{},{},{},{}\n".format(title, name, role, seiyuu)
-        if write is True:
-            target.write(row)
-        else:
-            cast.append(row)
+        cast.append(row)
         # Insert line into csv
     return cast
 
@@ -81,7 +73,7 @@ def write(data, target):
     for item in data:
         target.write(item)
 
-def write_to_csv(id_arr, char_target, theme_target):
+def write_to_csv(id_arr, cast_target, theme_target):
     """Perform an API call per ID and write onto a csv."""
     total = len(id_arr)
     data = []
@@ -91,37 +83,42 @@ def write_to_csv(id_arr, char_target, theme_target):
     prevData = updateCheck()
 
     for index, id in enumerate(id_arr):
+        # Let's give the API a break
+        time.sleep(10)
+
         result = API_call(id)
 
         # In case of issues involving timing, retry with a delay
-        if result is None and id :
+        if result is None:
             print("Error - did not get id: {}. Retrying;".format(id))
-            time.sleep(1)
+            time.sleep(10)
             result = API_call(id)
 
-        if result and (id in prevData) and (result == prevData[id]):
-            print("Data is similar. Skipping.")
-            continue
-        else:
-            print("No data found or data similar - adding")
-            prevData[id] = result
-
-
-        # If we get a result, keep going
         if result:
             title_eng = result['title_english']
             title = title_eng if title_eng else result['title']
 
-            get_themes(title, result, theme_target, True)
-            get_cast(title, result, char_target, True)
+            if (id in prevData) and (result == prevData[id][0]):
+                print("Data is similar. Using saved data.")
+                themes = prevData[id][1]
+                cast = prevData[id][2]
+            else:
+                print("No similar data found - adding")
+                themes = get_themes(title, result)
+                cast = get_cast(title, result)
 
+                prevData[id] = (result, themes, cast)
+
+            write(themes, theme_target)
+            write(cast, cast_target)
+            print("Complete. {} out of {}.\n".format(index + 1, total))
         else:
-            print("Could not get data.")
+            print("Could not get data.\n")
             error.append(id)
 
-        # Status update
-        print("Complete. {} out of {}.\n".format(index + 1, total))
     if len(error) > 0:
+        errors = open('./input/errors.txt'.format(time), 'w')
+        errors.write(error)
         print("Could not get IDs: {}".format(error))
 
     pickle.dump(prevData, open( "auto.p", "wb" ))
@@ -139,12 +136,12 @@ def main():
     time = datetime.datetime.now().isoformat()
 
     id_arr = ID_get('./input/{}'.format(sys.argv[1]))           # ID Read target
-    target = open('./output/season-{}'.format(time), 'w')       # Data Write target
-    theme_target = open('./output/op-ed-{}'.format(time), 'w')  # OP write target
+    target = open('./output/season-{}.csv'.format(time), 'w')       # Data Write target
+    theme_target = open('./output/op-ed-{}.csv'.format(time), 'w')  # OP write target
 
     write_to_csv(id_arr, target, theme_target)
 
-    print("Script complete. See '{}' for results".format(time))
+    print("Script complete. See '{}.csv' for results".format(time))
 
     return
 
