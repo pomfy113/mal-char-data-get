@@ -31,21 +31,20 @@ def API_call(MAL_id):
     return result
 
 def get_themes(title, data, target, write=False):
-    openings = []
-    endings = []
+    themes = []
     for op in data['opening_theme']:
         opening = "{},opening,{}\n".format(title, op)
         if write is True:
             target.write(opening)
         else:
-            openings.append(opening)
+            themes.append(opening)
     for ed in data['ending_theme']:
         ending = "{},ending,{}\n".format(title, ed)
         if write is True:
             target.write(ending)
         else:
-            endings.append(ending)
-    return openings, endings
+            themes.append(ending)
+    return themes
 
 def get_cast(title, data, target, write=False):
     cast = []
@@ -66,13 +65,6 @@ def get_cast(title, data, target, write=False):
         # Insert line into csv
     return cast
 
-def get_data(data):
-    title_eng = data['title_english']
-    title = title_eng if title_eng else data['title']
-
-    get_themes(title, data)
-    write_cast(title, data)
-
 def ID_get(file):
     """Grabs all MAL IDs from a text file."""
     inputfile = open(file).read()
@@ -85,6 +77,9 @@ def updateCheck():
         print("Previous data not found.")
         return {}
 
+def write(data, target):
+    for item in data:
+        target.write(item)
 
 def write_to_csv(id_arr, char_target, theme_target):
     """Perform an API call per ID and write onto a csv."""
@@ -104,16 +99,16 @@ def write_to_csv(id_arr, char_target, theme_target):
             time.sleep(1)
             result = API_call(id)
 
-        if prevData:
-            if result == prevData[index][0]:
-                print("Data is similar. Skipping.")
-                continue
-            else:
-                print("Data Updating")
-                prevData[index] = (result, [])
+        if result and (id in prevData) and (result == prevData[id]):
+            print("Data is similar. Skipping.")
+            continue
+        else:
+            print("No data found or data similar - adding")
+            prevData[id] = result
+
 
         # If we get a result, keep going
-        elif result:
+        if result:
             title_eng = result['title_english']
             title = title_eng if title_eng else result['title']
 
@@ -128,6 +123,9 @@ def write_to_csv(id_arr, char_target, theme_target):
         print("Complete. {} out of {}.\n".format(index + 1, total))
     if len(error) > 0:
         print("Could not get IDs: {}".format(error))
+
+    pickle.dump(prevData, open( "auto.p", "wb" ))
+
 
 
 def main():
