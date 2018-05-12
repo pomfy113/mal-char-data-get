@@ -30,14 +30,25 @@ def API_call(MAL_id):
 
     return result
 
-def write_themes(title, data, file):
+def get_themes(title, data, target, write=False):
+    openings = []
+    endings = []
     for op in data['opening_theme']:
-        file.write("{},opening,{}\n".format(title, op))
+        opening = "{},opening,{}\n".format(title, op)
+        if write is True:
+            target.write(opening)
+        else:
+            openings.append(opening)
     for ed in data['ending_theme']:
-        file.write("{},ending,{}\n".format(title, ed))
-    return
+        ending = "{},ending,{}\n".format(title, ed)
+        if write is True:
+            target.write(ending)
+        else:
+            endings.append(ending)
+    return openings, endings
 
-def write_cast(title, data, file):
+def get_cast(title, data, target, write=False):
+    cast = []
     for char in data['character']:
         role = char['role']
         name = unescape(char['name'])
@@ -47,10 +58,20 @@ def write_cast(title, data, file):
             seiyuu = "N/A"
 
         # Cleaned up array for writing into csv
-        row_array = "{},{},{},{}\n".format(title, name, role, seiyuu)
+        row = "{},{},{},{}\n".format(title, name, role, seiyuu)
+        if write is True:
+            target.write(row)
+        else:
+            cast.append(row)
         # Insert line into csv
-        file.write(row_array)
-    return
+    return cast
+
+def get_data(data):
+    title_eng = data['title_english']
+    title = title_eng if title_eng else data['title']
+
+    get_themes(title, data)
+    write_cast(title, data)
 
 def ID_get(file):
     """Grabs all MAL IDs from a text file."""
@@ -62,42 +83,49 @@ def updateCheck():
         return pickle.load( open( "auto.p", "rb" ) )
     else:
         print("Previous data not found.")
-        return None
+        return {}
 
 
 def write_to_csv(id_arr, char_target, theme_target):
     """Perform an API call per ID and write onto a csv."""
     total = len(id_arr)
+    data = []
     progress = 0
     error = []
 
     prevData = updateCheck()
 
-    print(prevData)
-
-
-    for id in id_arr:
-        progress += 1
+    for index, id in enumerate(id_arr):
         result = API_call(id)
-        # Status check
 
         # In case of issues involving timing, retry with a delay
         if result is None and id :
             print("Error - did not get id: {}. Retrying;".format(id))
             time.sleep(1)
             result = API_call(id)
+
+        if prevData:
+            if result == prevData[index][0]:
+                print("Data is similar. Skipping.")
+                continue
+            else:
+                print("Data Updating")
+                prevData[index] = (result, [])
+
         # If we get a result, keep going
-        if result:
+        elif result:
             title_eng = result['title_english']
             title = title_eng if title_eng else result['title']
 
-            write_themes(title, result, theme_target)
-            write_cast(title, result, char_target)
+            get_themes(title, result, theme_target, True)
+            get_cast(title, result, char_target, True)
+
         else:
             print("Could not get data.")
             error.append(id)
+
         # Status update
-        print("Complete. {} out of {}.\n".format(progress, total))
+        print("Complete. {} out of {}.\n".format(index + 1, total))
     if len(error) > 0:
         print("Could not get IDs: {}".format(error))
 
