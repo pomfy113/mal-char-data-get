@@ -52,7 +52,7 @@ def get_cast(title, data):
             seiyuu = "N/A"
 
         # Cleaned up array for writing into csv
-        row = "{},{},{},{}\n".format(title, name, role, seiyuu)
+        row = "{},\"{}\",{},\"{}\"\n".format(title, name, role, seiyuu)
         cast.append(row)
         # Insert line into csv
     return cast
