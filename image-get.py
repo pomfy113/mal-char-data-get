@@ -1,5 +1,6 @@
 import urllib.request
 import json
+import os
 
 def API_call(year, season):
     API_url = "http://api.jikan.moe/season/{}/{}/".format(year, season)
@@ -44,7 +45,12 @@ def main():
         year, season = get_input()
         result = API_call(year, season)
 
+    os.mkdir("images/{}-{}/".format(season, year))
 
+    for anime in result["season"]:
+        url = anime["image_url"]
+        title = anime["title"]
+        urllib.request.urlretrieve(url, './images/{}-{}/{}.jpg'.format(season, year, title))
 
 if __name__ == "__main__":
     main()
