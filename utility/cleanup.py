@@ -4,12 +4,11 @@ import sys
 from html import unescape
 import datetime
 
-
-
 def main():
     """Perform main function."""
     if len(sys.argv) != 2:
         return None
+
     print("Cleaning!")
 
     inputfile = open(sys.argv[1]).read()
