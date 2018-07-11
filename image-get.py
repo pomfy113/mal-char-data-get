@@ -1,8 +1,10 @@
 import urllib.request
 import json
 import os
+import re
 
 def API_call(year, season):
+    """Calls API to get the data."""
     API_url = "http://api.jikan.moe/season/{}/{}/".format(year, season)
 
     # Error checking
@@ -17,14 +19,11 @@ def API_call(year, season):
     return result
 
 def get_input():
+    """Gets input from user."""
     season = input('Enter season (lowercase): ')
     year = input('Enter year: ')
 
     return year, season
-
-# def write_to_csv:
-
-
 
 def main():
     """Perform main function."""
@@ -45,11 +44,16 @@ def main():
         year, season = get_input()
         result = API_call(year, season)
 
-    os.mkdir("images/{}-{}/".format(season, year))
+    # Directory
+    img_dir = "images/{}-{}/".format(season, year)
+    if not os.path.isdir(img_dir):
+        os.mkdir(img_dir)
 
+    # Going through each anime, then saving
     for anime in result["season"]:
         url = anime["image_url"]
-        title = anime["title"]
+        title = re.sub(r'[\\/*?:"<>|]',"", anime["title"])
+
         urllib.request.urlretrieve(url, './images/{}-{}/{}.jpg'.format(season, year, title))
 
 if __name__ == "__main__":
