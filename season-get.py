@@ -9,13 +9,13 @@ def CSV_write(data, year, season):
     target = open('./output-season/{}-{}.csv'.format(year, season), 'w')
 
     for anime in data['season']:
-        title = anime['title']
+        title = unescape(anime['title'])
         broadcast = anime['airing_start']
         eps = anime['episodes']
         genres = ", ".join(genre['name'] for genre in anime['genre'])
         studios = ", ".join(unescape(studio['name']) for studio in anime['producer'])
 
-        row = '{},"{}",{},"{}","{}"\n'.format(title, broadcast, eps, genres, studios)
+        row = '"{}","{}",{},"{}","{}"\n'.format(title, broadcast, eps, genres, studios)
         target.write(row)
 
 def API_call(year, season):
